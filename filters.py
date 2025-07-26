@@ -1,6 +1,4 @@
 from datetime import datetime
-import requests
-import re
 
 def classify_pair(pair):
     try:
@@ -54,24 +52,3 @@ def classify_pair(pair):
     except Exception as e:
         print(f"❌ Error in classify_pair: {e}")
         return None
-
-def score_social_proof(pair):
-    socials = pair.get("info", {}).get("socials", [])
-    for s in socials:
-        if s.get("type") == "twitter":
-            url = s.get("url", "")
-            handle_match = re.search(r"(?:twitter\.com|x\.com)/([A-Za-z0-9_]+)", url)
-            if handle_match:
-                handle = handle_match.group(1)
-                try:
-                    res = requests.get(f"https://x.com/{handle}", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
-                    if res.status_code == 200:
-                        if re.search(r"(1h|2h|[1-5]m|min|hour|Yesterday)", res.text, re.IGNORECASE):
-                            return "🟦 Active"
-                        else:
-                            return "⬜ Inactive"
-                    else:
-                        return "⬜ Inactive"
-                except:
-                    return "⬜ Inactive"
-    return "⬛ No X"
