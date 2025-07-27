@@ -17,7 +17,7 @@ def classify_pair(pair):
             1 <= age_hours <= 72 and
             txns_1h >= 110
         ):
-            return "Very Degen"
+            return "🟥 Very Degen"
 
         # Degen
         if (
@@ -26,26 +26,26 @@ def classify_pair(pair):
             volume_24h >= 500_000 and
             txns_1h >= 75
         ):
-            return "Degen"
+            return "🟧 Degen"
 
         # Mid-Cap
         if (
             liquidity >= 100_000 and
             fdv >= 1_000_000 and
-            volume_24h >= 1_500_000 and
+            volume_24h >= 800_000 and
             txns_1h >= 50
         ):
-            return "Mid-Cap"
+            return "🟨 Mid-Cap"
 
         # Old Mid-Caps
         if (
             liquidity >= 100_000 and
             200_000 <= fdv <= 100_000_000 and
-            720 <= age_hours <= 2800 and
+            age_hours >= 720 and
             txns_24h >= 2300 and
             volume_24h >= 200_000
         ):
-            return "Old Mid-Cap"
+            return "🟩 Old Mid-Cap"
 
         return None
 
