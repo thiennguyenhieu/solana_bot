@@ -4,7 +4,7 @@ DEX_BASE = "https://api.dexscreener.com"
 
 def get_solana_token_profiles():
     try:
-        res = requests.get(f"{DEX_BASE}/token-profiles/latest/v1")
+        res = requests.get(f"{DEX_BASE}/token-boosts/latest/v1")
         res.raise_for_status()
         data = res.json()
         return [item for item in data if item.get("chainId") == "solana"]
