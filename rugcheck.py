@@ -66,5 +66,5 @@ def evaluate_rugcheck(report: dict):
     status = "🟩 Safe" if score >= 80 else "🟠 Risky" if score >= 40 else "🔴 Danger"
     rugcheck_link = f"https://rugcheck.xyz/tokens/{report.get('mint')}"
 
-    return f"{status} | Score: {score} / 100", reasons, rugcheck_link
+    return status, score, reasons, rugcheck_link
 

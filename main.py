@@ -36,12 +36,15 @@ def main():
 
         mint_address = base.get("address", "")
         rugcheck_data = get_rugcheck_report(mint_address)
-        rug_status, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
+        rug_status, rug_score, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
+
+        if (rug_score < 70):
+            continue
 
         log = []
         log.append(f"{category} | {base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
         log.append(f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%")
-        log.append(f"{rug_status}")
+        log.append(f"{rug_status} | Score: {rug_score} / 100")
         if rug_link:
             log.append(f"🔍 {rug_link}")
         for reason in rug_reasons:
