@@ -1,54 +1,40 @@
 from datetime import datetime
 
-def classify_pair(pair):
+def is_potential_x100(pair):
     try:
         liquidity = float(pair.get("liquidity", {}).get("usd", 0))
+        market_cap = float(pair.get("marketCap", 0))
         fdv = float(pair.get("fdv", 0))
         volume_24h = float(pair.get("volume", {}).get("h24", 0))
-        txns_1h = sum(pair.get("txns", {}).get("h1", {}).values())
-        txns_24h = sum(pair.get("txns", {}).get("h24", {}).values())
+        txns = pair.get("txns", {})
+        txns_1h = sum(txns.get("h1", {}).values())
+        buys_1h = txns.get("h1", {}).get("buys", 0)
+        sells_1h = txns.get("h1", {}).get("sells", 1)  # prevent divide-by-zero
+        buy_sell_ratio = buys_1h / sells_1h if sells_1h > 0 else float('inf')
+        price_change_24h = float(pair.get("priceChange", {}).get("h24", 0))
         created_at = int(pair.get("pairCreatedAt", 0)) // 1000
         age_hours = (datetime.utcnow() - datetime.utcfromtimestamp(created_at)).total_seconds() / 3600
-    
-        # Very Degen
-        if (
-            liquidity >= 15_000 and
-            fdv >= 100_000 and
-            1 <= age_hours <= 72 and
-            txns_1h >= 110
-        ):
-            return "🟥 Very Degen"
 
-        # Degen
-        if (
-            liquidity >= 50_000 and
-            fdv >= 500_000 and
-            volume_24h >= 500_000 and
-            txns_1h >= 75
-        ):
-            return "🟧 Degen"
+        # Unified X100 Criteria
+        if not (100_000 <= market_cap <= 10_000_000):
+            return False
+        if liquidity < 50_000:
+            return False
+        if fdv >= 50_000_000:
+            return False
+        if volume_24h <= 500_000:
+            return False
+        if txns_1h <= 100:
+            return False
+        if age_hours > 168:  # < 7 days
+            return False
+        if price_change_24h >= 500:
+            return False
+        if buy_sell_ratio <= 1.0:
+            return False
 
-        # Mid-Cap
-        if (
-            liquidity >= 100_000 and
-            fdv >= 1_000_000 and
-            volume_24h >= 800_000 and
-            txns_1h >= 50
-        ):
-            return "🟨 Mid-Cap"
-
-        # Old Mid-Caps
-        if (
-            liquidity >= 100_000 and
-            200_000 <= fdv <= 100_000_000 and
-            age_hours >= 720 and
-            txns_24h >= 2300 and
-            volume_24h >= 200_000
-        ):
-            return "🟩 Old Mid-Cap"
-
-        return None
+        return True  # all conditions met
 
     except Exception as e:
-        print(f"❌ Error in classify_pair: {e}")
-        return None
+        print(f"❌ Error in is_potential_x100: {e}")
+        return False

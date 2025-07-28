@@ -1,5 +1,5 @@
 from screener import get_solana_token_profiles, get_pair_address, get_pair_details
-from filters import classify_pair
+from filters import is_potential_x100
 from rugcheck import get_rugcheck_report, evaluate_rugcheck
 from telegram_bot import send_telegram_message
 
@@ -9,8 +9,7 @@ def main():
 
     log_entries = []
 
-    for token in tokens:
-        address = token.get("tokenAddress")
+    for address in tokens:
         if not address:
             continue
 
@@ -22,8 +21,7 @@ def main():
         if not pair:
             continue
 
-        category = classify_pair(pair)
-        if not category:
+        if not is_potential_x100(pair):
             continue
         
         base = pair.get("baseToken", {})
@@ -42,7 +40,7 @@ def main():
             continue
 
         log = []
-        log.append(f"{category} | {base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
+        log.append(f"{base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
         log.append(f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%")
         log.append(f"{rug_status} | Score: {rug_score} / 100")
         if rug_link:

@@ -3,14 +3,29 @@ import requests
 DEX_BASE = "https://api.dexscreener.com"
 
 def get_solana_token_profiles():
-    try:
-        res = requests.get(f"{DEX_BASE}/token-boosts/latest/v1")
-        res.raise_for_status()
-        data = res.json()
-        return [item for item in data if item.get("chainId") == "solana"]
-    except Exception as e:
-        print(f"❌ Failed to fetch Solana token profiles: {e}")
-        return []
+    endpoints = [
+        f"{DEX_BASE}/token-boosts/latest/v1",
+        f"{DEX_BASE}/token-boosts/top/v1",
+        f"{DEX_BASE}/token-profiles/latest/v1"
+    ]
+
+    token_addresses = set()
+
+    for url in endpoints:
+        try:
+            res = requests.get(url, timeout=10)
+            res.raise_for_status()
+            data = res.json()
+
+            for item in data:
+                if item.get("chainId") == "solana":
+                    token_addr = item.get("tokenAddress")
+                    if token_addr:
+                        token_addresses.add(token_addr)
+        except Exception as e:
+            print(f"❌ Failed to fetch from {url}: {e}")
+
+    return list(token_addresses)
 
 def get_pair_address(chain_id, token_address):
     try:
