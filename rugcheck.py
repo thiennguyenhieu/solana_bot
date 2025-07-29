@@ -14,16 +14,18 @@ def get_rugcheck_report(mint: str):
 
 def evaluate_rugcheck(report: dict):
     if not report or report.get("rugged") is True:
-        return "🔴 Rugged", [], 0, f"https://rugcheck.xyz/tokens/{report.get('mint')}" if report else ""
+        return "🔴 Rugged", 0, [], f"https://rugcheck.xyz/tokens/{report.get('mint')}" if report else ""
 
     reasons = []
-    score = 100  # Start from full score, deduct per violation
+    score = 100  # Start from full score
 
+    # Top holders
     top_holders = report.get("topHolders", [])
     total_holders = report.get("totalHolders", 0)
     top1_pct = top_holders[0]["pct"] if top_holders else 100
     top10_pct = sum(h["pct"] for h in top_holders[:10]) if len(top_holders) >= 10 else 100
 
+    # LP lock percentage
     lp_locked_pct = 0
     for market in report.get("markets", []):
         lp_locked_pct = max(lp_locked_pct, market.get("lp", {}).get("lpLockedPct", 0))
@@ -54,6 +56,7 @@ def evaluate_rugcheck(report: dict):
         score -= 10
         reasons.append(f"⚠️ Transfer fee > 5% ({transfer_fee_pct}%)")
 
+    # Risk field
     risks = report.get("risks", [])
     if risks:
         score -= 15
@@ -62,9 +65,15 @@ def evaluate_rugcheck(report: dict):
             if description:
                 reasons.append(f"⚠️ {description}")
 
-    # Determine status
+    # Insider detection
+    if report.get("graphInsidersDetected", 0) > 0:
+        score -= 15
+        reasons.append("⚠️ Insider network detected")
+
+    # Final status
     status = "🟩 Safe" if score >= 80 else "🟠 Risky" if score >= 40 else "🔴 Danger"
     rugcheck_link = f"https://rugcheck.xyz/tokens/{report.get('mint')}"
 
     return status, score, reasons, rugcheck_link
+
 
