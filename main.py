@@ -7,27 +7,27 @@ from log_formatter import build_alert_log
 
 def main():
     tokens = get_solana_token_profiles()
-    print(f"✅ Found {len(tokens)} Solana token profiles.\n")
+    #print(f"✅ Found {len(tokens)} Solana token profiles.\n")
 
     passed_pairs = []
 
     for address in tokens:
         if not address:
-            print("⚠️ Skipping token: Missing address")
+            #print("⚠️ Skipping token: Missing address")
             continue
 
         pair_address = get_pair_address("solana", address)
         if not pair_address:
-            print(f"⚠️ Skipping {address}: Failed to get pair address")
+            #print(f"⚠️ Skipping {address}: Failed to get pair address")
             continue
 
         pair = get_pair_details("solana", pair_address)
         if not pair:
-            print(f"⚠️ Skipping {address}: Failed to get pair details for pair {pair_address}")
+            #print(f"⚠️ Skipping {address}: Failed to get pair details for pair {pair_address}")
             continue
 
         if not is_potential_x100(pair):
-            print(f"❌ Skipping {pair_address}: Not a potential x100 candidate")
+            #print(f"❌ Skipping {pair_address}: Not a potential x100 candidate")
             continue
 
         base = pair.get("baseToken", {})
@@ -37,10 +37,10 @@ def main():
         rug_status, rug_score, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
 
         if rug_score < 70:
-            print(f"🛑 Skipping {pair_address}: Rugcheck score too low ({rug_score})")
+            #print(f"🛑 Skipping {pair_address}: Rugcheck score too low ({rug_score})")
             continue
 
-        print(f"✅ PASSED: {pair_address}")
+        #print(f"✅ PASSED: {pair_address}")
 
         # Enrich pair with evaluated data
         pair["rug_status"] = rug_status
@@ -55,7 +55,7 @@ def main():
         alerts = update_pair_tracking(passed_pairs)
         if alerts:
             log_text = build_alert_log(alerts)
-            print(log_text)
+            #print(log_text)
             send_telegram_message(log_text)
 
 if __name__ == "__main__":
