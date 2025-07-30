@@ -64,3 +64,48 @@ def is_potential_x100(pair):
     except Exception as e:
         print(f"❌ Error in is_potential_x100: {e}")
         return False
+    
+def is_good_entry_point(pair: dict) -> bool:
+    try:
+        price_change = pair.get("priceChange", {})
+        volume = pair.get("volume", {})
+
+        price_5m = float(price_change.get("m5", 0))
+        price_15m = float(price_change.get("m15", 0))
+        price_1h = float(price_change.get("h1", 0))
+
+        volume_1h = float(volume.get("h1", 0))
+        volume_6h = float(volume.get("h6", 0))
+
+        txns = pair.get("txns", {})
+        buys_1h = txns.get("h1", {}).get("buys", 0)
+        sells_1h = txns.get("h1", {}).get("sells", 1)  # prevent div-by-zero
+        buy_sell_ratio = buys_1h / sells_1h if sells_1h > 0 else float('inf')
+
+        current_price = float(pair.get("priceUsd", 0))
+        ma_5 = float(pair.get("ma", {}).get("m5", current_price))
+        ma_15 = float(pair.get("ma", {}).get("m15", current_price))
+
+        # --- Conditions ---
+
+        # 1. Avoid high momentum spikes
+        if price_5m > 30 or price_15m > 60:
+            return False
+
+        # 2. Accumulation: volume rising, price flat
+        if volume_6h > 0 and volume_1h > (volume_6h / 6) and abs(price_1h) < 5:
+            return True
+
+        # 3. Healthy buy pressure, not dumped yet
+        if buy_sell_ratio > 2.0 and price_1h < 20:
+            return True
+
+        # 4. Trending above moving averages
+        if current_price >= ma_5 >= ma_15:
+            return True
+
+        return False
+
+    except Exception as e:
+        print(f"❌ Error in is_good_entry_point: {e}")
+        return False

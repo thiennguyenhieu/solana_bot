@@ -7,7 +7,7 @@ main()
 
 # Start the recurring schedule
 scheduler = BackgroundScheduler(timezone='Asia/Ho_Chi_Minh')  # Use your local timezone
-scheduler.add_job(main, 'interval', minutes=15)
+scheduler.add_job(main, 'interval', minutes=10)
 scheduler.start()
 
 try:

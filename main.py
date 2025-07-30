@@ -1,61 +1,62 @@
 from screener import get_solana_token_profiles, get_pair_address, get_pair_details
-from filters import is_potential_x100
+from filters import is_potential_x100, is_good_entry_point
 from rugcheck import get_rugcheck_report, evaluate_rugcheck
+from tracker import update_pair_tracking
 from telegram_bot import send_telegram_message
+from log_formatter import build_alert_log
 
 def main():
     tokens = get_solana_token_profiles()
     print(f"✅ Found {len(tokens)} Solana token profiles.\n")
 
-    log_entries = []
+    passed_pairs = []
 
     for address in tokens:
         if not address:
+            print("⚠️ Skipping token: Missing address")
             continue
 
         pair_address = get_pair_address("solana", address)
         if not pair_address:
+            print(f"⚠️ Skipping {address}: Failed to get pair address")
             continue
 
         pair = get_pair_details("solana", pair_address)
         if not pair:
+            print(f"⚠️ Skipping {address}: Failed to get pair details for pair {pair_address}")
             continue
 
         if not is_potential_x100(pair):
+            print(f"❌ Skipping {pair_address}: Not a potential x100 candidate")
             continue
-        
-        base = pair.get("baseToken", {})
-        quote = pair.get("quoteToken", {})
-        price_usd = pair.get("priceUsd", "N/A")
-        market_cap = pair.get("marketCap", 0)
-        liquidity = pair.get("liquidity", {}).get("usd", 0)
-        change_24h = pair.get("priceChange", {}).get("h24", "N/A")
-        url = pair.get("url", "")
 
+        base = pair.get("baseToken", {})
         mint_address = base.get("address", "")
+
         rugcheck_data = get_rugcheck_report(mint_address)
         rug_status, rug_score, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
 
-        if (rug_score < 70):
+        if rug_score < 70:
+            print(f"🛑 Skipping {pair_address}: Rugcheck score too low ({rug_score})")
             continue
 
-        log = []
-        log.append(f"{base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
-        log.append(f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%")
-        log.append(f"{rug_status} | Score: {rug_score} / 100")
-        if rug_link:
-            log.append(f"🔍 {rug_link}")
-        for reason in rug_reasons:
-            log.append(reason)
-        log.append(f"🔗 {url}")
-        log.append("-" * 20)
+        print(f"✅ PASSED: {pair_address}")
 
-        log_entries.append("\n".join(log))
-    
-    if log_entries:
-        final_log = "\n".join(log_entries)
-        print(final_log)  # still print locally
-        send_telegram_message(final_log)
+        # Enrich pair with evaluated data
+        pair["rug_status"] = rug_status
+        pair["rug_score"] = rug_score
+        pair["rug_reasons"] = rug_reasons
+        pair["rug_link"] = rug_link
+        pair["is_good_entry"] = is_good_entry_point(pair)
+
+        passed_pairs.append(pair)
+
+    if passed_pairs:
+        alerts = update_pair_tracking(passed_pairs)
+        if alerts:
+            log_text = build_alert_log(alerts)
+            print(log_text)
+            send_telegram_message(log_text)
 
 if __name__ == "__main__":
     main()
