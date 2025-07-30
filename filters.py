@@ -71,7 +71,6 @@ def is_good_entry_point(pair: dict) -> bool:
         volume = pair.get("volume", {})
 
         price_5m = float(price_change.get("m5", 0))
-        price_15m = float(price_change.get("m15", 0))
         price_1h = float(price_change.get("h1", 0))
 
         volume_1h = float(volume.get("h1", 0))
@@ -83,13 +82,14 @@ def is_good_entry_point(pair: dict) -> bool:
         buy_sell_ratio = buys_1h / sells_1h if sells_1h > 0 else float('inf')
 
         current_price = float(pair.get("priceUsd", 0))
-        ma_5 = float(pair.get("ma", {}).get("m5", current_price))
-        ma_15 = float(pair.get("ma", {}).get("m15", current_price))
+        # Estimate MAs using available history (e.g. average of h1 prices)
+        ma_5 = current_price  # no separate m5 MA, fallback to current
+        ma_1h = current_price / (1 + price_1h / 100) if price_1h != 0 else current_price
 
         # --- Conditions ---
 
         # 1. Avoid high momentum spikes
-        if price_5m > 30 or price_15m > 60:
+        if price_5m > 30:
             return False
 
         # 2. Accumulation: volume rising, price flat
@@ -100,8 +100,8 @@ def is_good_entry_point(pair: dict) -> bool:
         if buy_sell_ratio > 2.0 and price_1h < 20:
             return True
 
-        # 4. Trending above moving averages
-        if current_price >= ma_5 >= ma_15:
+        # 4. Trending above short-term average (heuristic)
+        if current_price >= ma_5 >= ma_1h:
             return True
 
         return False
