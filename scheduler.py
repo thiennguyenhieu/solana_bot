@@ -2,11 +2,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from main import main
 import time
 
-# Run once immediately
+# Run both once immediately
 main()
 
 # Start the recurring schedule
-scheduler = BackgroundScheduler(timezone='Asia/Ho_Chi_Minh')  # Use your local timezone
+scheduler = BackgroundScheduler(timezone='Asia/Ho_Chi_Minh')
+
+# Schedule main bot scan every 10 mins
 scheduler.add_job(main, 'interval', minutes=10)
 scheduler.start()
 

@@ -1,39 +1,59 @@
 import json
 import os
+from typing import List
+from pathlib import Path
 
-def update_pair_tracking(current_pairs, tracked_file="tracked_pairs.json", threshold=5):
-    # Load existing data
-    if os.path.exists(tracked_file):
-        with open(tracked_file, "r") as f:
-            data = json.load(f)
-    else:
-        data = {}
+TRACKED_FILE = Path("tracked_pairs.json")
+COUNT_THRESHOLD = 5
 
+def load_json(path):
+    if not path.exists():
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Failed to load {path}: {e}")
+        return {}
+
+def save_json(path, data):
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"⚠️ Failed to save {path}: {e}")
+
+def update_pair_tracking(passed_pairs: List[dict]) -> List[dict]:
+    data = load_json(TRACKED_FILE)
     updated_data = {}
+    current_ids = set()
+
     alerts = []
 
-    for pair in current_pairs:
-        pair_id = pair["pairAddress"]
-        existing = data.get(pair_id, {})
-        count = existing.get("count", 0) + 1
+    for pair in passed_pairs:
+        pair_id = pair.get("pairAddress")
+        if not pair_id:
+            continue
 
-        # Always update latest data
-        updated_data[pair_id] = pair.copy()
-        updated_data[pair_id]["count"] = count
+        current_ids.add(pair_id)
 
-        if count >= threshold:
+        if pair_id in data:
+            pair["count"] = data[pair_id].get("count", 0) + 1
+        else:
+            pair["count"] = 1
+
+        updated_data[pair_id] = pair
+
+        if pair["count"] >= COUNT_THRESHOLD:
             alerts.append(pair)
 
-    # Handle missing pairs (decay or remove)
-    for pair_id, existing in data.items():
-        if pair_id not in updated_data:
-            count = existing.get("count", 0) - 1
-            if count > 0:
-                existing["count"] = count
-                updated_data[pair_id] = existing  # keep decayed data
+    # Decrement count or remove for missing pairs
+    for old_id, old_data in data.items():
+        if old_id not in current_ids:
+            old_count = old_data.get("count", 0)
+            if old_count > 1:
+                old_data["count"] = old_count - 1
+                updated_data[old_id] = old_data
 
-    # Save
-    with open(tracked_file, "w") as f:
-        json.dump(updated_data, f, indent=2)
-
+    save_json(TRACKED_FILE, updated_data)
     return alerts

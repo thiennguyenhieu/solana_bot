@@ -15,8 +15,8 @@ def build_alert_log(pairs: list) -> str:
         rug_link = pair.get("rug_link", "")
 
         entry_text = (
-            f"{base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')} | {rug_status} | Score: {rug_score} / 100\n"
-            f"Address: {base.get('address', '')}\n"
+            f"{base.get('symbol', 'N/A')} | {base.get('address', '')}\n"
+            f"{rug_status} | Score: {rug_score} / 100\n"        
             f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%\n"
         )
 
