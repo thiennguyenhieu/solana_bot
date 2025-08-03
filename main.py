@@ -52,10 +52,9 @@ def main():
         passed_pairs.append(pair)
 
     if passed_pairs:
-        alerts = update_pair_tracking(passed_pairs)
-        if alerts:
-            log_text = build_alert_log(alerts)
-            #print(log_text)
+        all_tracked = update_pair_tracking(passed_pairs)
+        if all_tracked:
+            log_text = build_alert_log(all_tracked)  # Will highlight internally
             send_telegram_message(log_text)
 
 if __name__ == "__main__":

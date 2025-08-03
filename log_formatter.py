@@ -1,39 +1,35 @@
-def build_alert_log(pairs: list) -> str:
-    logs = []
+def build_alert_log(pairs: dict) -> str:
+    log_entries = []
 
-    for pair in pairs:
-        base = pair.get("baseToken", {})
-        quote = pair.get("quoteToken", {})
-        price_usd = pair.get("priceUsd", "N/A")
-        market_cap = pair.get("marketCap", 0)
-        liquidity = pair.get("liquidity", {}).get("usd", 0)
-        change_24h = pair.get("priceChange", {}).get("h24", "N/A")
-        url = pair.get("url", "")
-        rug_status = pair.get("rug_status", "")
-        rug_score = pair.get("rug_score", 0)
-        rug_reasons = pair.get("rug_reasons", [])
-        rug_link = pair.get("rug_link", "")
+    for pair_id, data in pairs.items():  # 👈 unpack properly here
+        base = data.get("baseToken", {})
+        quote = data.get("quoteToken", {})
+        price_usd = data.get("priceUsd", "N/A")
+        market_cap = data.get("marketCap", 0)
+        liquidity = data.get("liquidity", {}).get("usd", 0)
+        change_24h = data.get("priceChange", {}).get("h24", "N/A")
+        url = data.get("url", "")
+        rug_status = data.get("rug_status", "")
+        rug_score = data.get("rug_score", 0)
+        rug_reasons = data.get("rug_reasons", [])
+        rug_link = data.get("rug_link", "")
+        count = data.get("count", 0)
+        is_good_entry = data.get("is_good_entry", False)
 
-        entry_text = (
-            f"{base.get('symbol', 'N/A')} | {base.get('address', '')}\n"
-            f"{rug_status} | Score: {rug_score} / 100\n"        
-            f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%\n"
-        )
-
-        if pair.get("is_good_entry"):
-            entry_text += "✅ Entry Signal Detected\n"
-        else:
-            entry_text += "⏳ Not ideal entry point\n"
-
+        log = []
+        prefix = "🔥" if count >= 5 else "➖"
+        log.append(f"{prefix} {base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
+        log.append(f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%")
+        log.append(f"{rug_status} | Score: {rug_score} / 100")
         if rug_link:
-            entry_text += f"🔍 {rug_link}\n"
-
+            log.append(f"🔍 {rug_link}")
         for reason in rug_reasons:
-            entry_text += f"{reason}\n"
+            log.append(reason)
+        if is_good_entry:
+            log.append("✅ Entry Signal Detected")
+        log.append(f"🔗 {url}")
+        log.append("-" * 20)
 
-        entry_text += f"🔗 {url}\n"
-        entry_text += "-" * 30
+        log_entries.append("\n".join(log))
 
-        logs.append(entry_text)
-
-    return "\n\n".join(logs)
+    return "\n\n".join(log_entries)

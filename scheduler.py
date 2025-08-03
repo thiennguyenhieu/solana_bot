@@ -8,8 +8,8 @@ main()
 # Start the recurring schedule
 scheduler = BackgroundScheduler(timezone='Asia/Ho_Chi_Minh')
 
-# Schedule main bot scan every 10 mins
-scheduler.add_job(main, 'interval', minutes=10)
+# Schedule main bot scan every 15 mins
+scheduler.add_job(main, 'interval', minutes=15)
 scheduler.start()
 
 try:
