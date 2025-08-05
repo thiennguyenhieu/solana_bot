@@ -1,7 +1,9 @@
-def build_alert_log(pairs: dict) -> str:
+from trader import get_trade_signal
+
+def build_alert_log(pairs: list) -> str:
     log_entries = []
 
-    for pair_id, data in pairs.items():  # 👈 unpack properly here
+    for data in pairs:
         base = data.get("baseToken", {})
         quote = data.get("quoteToken", {})
         price_usd = data.get("priceUsd", "N/A")
@@ -14,7 +16,6 @@ def build_alert_log(pairs: dict) -> str:
         rug_reasons = data.get("rug_reasons", [])
         rug_link = data.get("rug_link", "")
         count = data.get("count", 0)
-        is_good_entry = data.get("is_good_entry", False)
 
         log = []
         prefix = "🔥" if count >= 5 else "➖"
@@ -25,8 +26,7 @@ def build_alert_log(pairs: dict) -> str:
             log.append(f"🔍 {rug_link}")
         for reason in rug_reasons:
             log.append(reason)
-        if is_good_entry:
-            log.append("✅ Entry Signal Detected")
+        log.append(get_trade_signal(data))
         log.append(f"🔗 {url}")
         log.append("-" * 20)
 

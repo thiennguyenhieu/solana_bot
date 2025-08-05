@@ -1,5 +1,5 @@
 from screener import get_solana_token_profiles, get_pair_address, get_pair_details
-from filters import is_potential_x100, is_good_entry_point
+from filters import is_potential_x100
 from rugcheck import get_rugcheck_report, evaluate_rugcheck
 from tracker import update_pair_tracking
 from telegram_bot import send_telegram_message
@@ -36,8 +36,8 @@ def main():
         rugcheck_data = get_rugcheck_report(mint_address)
         rug_status, rug_score, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
 
-        if rug_score < 70:
-            #print(f"🛑 Skipping {pair_address}: Rugcheck score too low ({rug_score})")
+        # 🚫 Skip if rug score too low or metadata is mutable by owner
+        if rug_score < 70 or any("Token metadata can be changed by the owner" in r for r in rug_reasons):
             continue
 
         #print(f"✅ PASSED: {pair_address}")
@@ -47,8 +47,7 @@ def main():
         pair["rug_score"] = rug_score
         pair["rug_reasons"] = rug_reasons
         pair["rug_link"] = rug_link
-        pair["is_good_entry"] = is_good_entry_point(pair)
-
+        
         passed_pairs.append(pair)
 
     if passed_pairs:
