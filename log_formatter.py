@@ -1,35 +1,51 @@
-from trader import get_trade_signal
-
 def build_alert_log(pairs: list) -> str:
-    log_entries = []
+    lines = []
 
     for data in pairs:
-        base = data.get("baseToken", {})
-        quote = data.get("quoteToken", {})
+        base = data.get("baseToken", {}) or {}
+        quote = data.get("quoteToken", {}) or {}
+
+        symbol = f"{base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}"
         price_usd = data.get("priceUsd", "N/A")
-        market_cap = data.get("marketCap", 0)
-        liquidity = data.get("liquidity", {}).get("usd", 0)
-        change_24h = data.get("priceChange", {}).get("h24", "N/A")
+
+        market_cap = float(data.get("marketCap", 0) or 0)
+        liquidity = float((data.get("liquidity", {}) or {}).get("usd", 0) or 0)
+        change_24h = (data.get("priceChange", {}) or {}).get("h24", "N/A")
         url = data.get("url", "")
+
         rug_status = data.get("rug_status", "")
-        rug_score = data.get("rug_score", 0)
-        rug_reasons = data.get("rug_reasons", [])
+        rug_score = int(data.get("rug_score", 0) or 0)
+        rug_reasons = data.get("rug_reasons", []) or []
         rug_link = data.get("rug_link", "")
-        count = data.get("count", 0)
 
-        log = []
+        count = int(data.get("count", 0) or 0)
         prefix = "🔥" if count >= 5 else "➖"
-        log.append(f"{prefix} {base.get('symbol', 'N/A')} / {quote.get('symbol', 'N/A')}")
-        log.append(f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%")
-        log.append(f"{rug_status} | Score: {rug_score} / 100")
+
+        signal = data.get("trade_signal", "No Signal")
+        sig_icon = (
+            "🟢" if signal == "Entry"
+            else "🟡" if signal == "Watching"
+            else "🔴" if signal == "Exit"
+            else "⚪"
+        )
+        reasons = data.get("trade_reasons", []) or []
+        reasons_txt = (" — " + " · ".join(reasons[:2])) if reasons else ""
+
+        header = f"{prefix} {sig_icon} {signal} | {symbol}{reasons_txt}"
+        metrics = f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%"
+        rugline = f"{rug_status} | Score: {rug_score} / 100"
+
+        parts = [header, metrics, rugline]
+
+        if rug_reasons:
+            parts.extend([f"{r}" for r in rug_reasons])
+
         if rug_link:
-            log.append(f"🔍 {rug_link}")
-        for reason in rug_reasons:
-            log.append(reason)
-        log.append(get_trade_signal(data))
-        log.append(f"🔗 {url}")
-        log.append("-" * 20)
+            parts.append(f"🔍 {rug_link}")
 
-        log_entries.append("\n".join(log))
+        parts.append(f"🔗 {url}")
+        parts.append("-" * 40)
 
-    return "\n\n".join(log_entries)
+        lines.append("\n".join(parts))
+
+    return "\n".join(lines)

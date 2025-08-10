@@ -75,5 +75,3 @@ def evaluate_rugcheck(report: dict):
     rugcheck_link = f"https://rugcheck.xyz/tokens/{report.get('mint')}"
 
     return status, score, reasons, rugcheck_link
-
-

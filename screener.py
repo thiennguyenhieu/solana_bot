@@ -30,7 +30,7 @@ def get_solana_token_profiles():
 def get_pair_address(chain_id, token_address):
     try:
         url = f"{DEX_BASE}/token-pairs/v1/{chain_id}/{token_address}"
-        res = requests.get(url)
+        res = requests.get(url, timeout=10)
         res.raise_for_status()
         data = res.json()
         if isinstance(data, list) and data:
@@ -42,7 +42,7 @@ def get_pair_address(chain_id, token_address):
 def get_pair_details(chain_id, pair_address):
     try:
         url = f"{DEX_BASE}/latest/dex/pairs/{chain_id}/{pair_address}"
-        res = requests.get(url)
+        res = requests.get(url, timeout=10)
         res.raise_for_status()
         data = res.json()
         return data.get("pair")
