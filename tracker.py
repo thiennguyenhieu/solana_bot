@@ -1,8 +1,9 @@
-import json
+# tracker.py
 from pathlib import Path
 from datetime import datetime
+import json
 from screener import get_pair_details
-from trader import update_histories, get_entry_exit_signal
+from trader import update_histories, get_trade_signal
 
 TRACKED_FILE = Path("tracked_pairs.json")
 COUNT_CAP = 5
@@ -26,11 +27,10 @@ def save_json(path: Path, data: dict):
 
 def update_pair_tracking(passed_pairs, file_path="tracked_pairs.json"):
     """
-    Stores minimal state per pair: count + Rugcheck + trade signal + compact history (trade_meta).
-    - Increments count for pairs that passed this round (capped at COUNT_CAP).
-    - Decrements (and drops) pairs that didn't show up this round.
-    - Updates trade histories and computes current trade signal.
-    - Returns latest pair details for ALL tracked pairs, with stored fields merged in.
+    Stores minimal state per pair:
+      - count (capped) + Rugcheck + Trade signal/meta + Market fields
+    Increments count for seen pairs, decays for unseen pairs,
+    then fetches latest pair details and merges stored fields.
     """
     file_path = Path(file_path)
     previous = load_json(file_path)  # {pairAddress: {...}}
@@ -50,18 +50,24 @@ def update_pair_tracking(passed_pairs, file_path="tracked_pairs.json"):
 
         # --- keep & update compact trade history ---
         trade_meta = prev_entry.get("trade_meta", {})
-        trade_meta = update_histories(trade_meta, pair, max_len=72)  # 72 x 10min ≈ 12h
-        signal, reasons = get_entry_exit_signal(pair, trade_meta)
+        trade_meta = update_histories(trade_meta, pair, max_len=72)  # ~12h of 10‑min bars
+        signal, reasons = get_trade_signal(trade_meta)
 
         updated[pair_id] = {
             "count": new_count,
             "last_seen": now_iso,
 
-            # Rugcheck fields (latest if present)
+            # Rugcheck fields (prefer latest if present)
             "rug_status": pair.get("rug_status", prev_entry.get("rug_status")),
             "rug_score": pair.get("rug_score", prev_entry.get("rug_score")),
             "rug_reasons": pair.get("rug_reasons", prev_entry.get("rug_reasons")),
             "rug_link": pair.get("rug_link", prev_entry.get("rug_link")),
+
+            # Market fields (persisted)
+            "market_label": pair.get("market_label", prev_entry.get("market_label")),
+            "market_score": pair.get("market_score", prev_entry.get("market_score")),
+            "potential_multiple": pair.get("potential_multiple", prev_entry.get("potential_multiple")),
+            "market_checks": pair.get("market_checks", prev_entry.get("market_checks")),
 
             # Trade fields
             "trade_signal": signal,
@@ -77,7 +83,7 @@ def update_pair_tracking(passed_pairs, file_path="tracked_pairs.json"):
         new_count = max(0, int(old_entry.get("count", 1)) - 1)
         if new_count > 0:
             old_entry["count"] = new_count
-            # keep last trade meta/signal
+            # keep their last trade/rug/market state
             updated[pair_id] = old_entry
         # else drop
 
@@ -91,11 +97,22 @@ def update_pair_tracking(passed_pairs, file_path="tracked_pairs.json"):
         if not latest:
             continue
 
+        # counts
         latest["count"] = meta.get("count", 0)
+
+        # rug fields
         latest["rug_status"] = meta.get("rug_status")
         latest["rug_score"] = meta.get("rug_score")
         latest["rug_reasons"] = meta.get("rug_reasons")
         latest["rug_link"] = meta.get("rug_link")
+
+        # market fields
+        latest["market_label"] = meta.get("market_label")
+        latest["market_score"] = meta.get("market_score")
+        latest["potential_multiple"] = meta.get("potential_multiple")
+        latest["market_checks"] = meta.get("market_checks")
+
+        # trade fields
         latest["trade_signal"] = meta.get("trade_signal", "No Signal")
         latest["trade_reasons"] = meta.get("trade_reasons", [])
 

@@ -31,11 +31,21 @@ def build_alert_log(pairs: list) -> str:
         reasons = data.get("trade_reasons", []) or []
         reasons_txt = (" — " + " · ".join(reasons[:2])) if reasons else ""
 
+        # Market fields (new)
+        market_label = data.get("market_label", "")
+        market_score = data.get("market_score", None)
+        potential_mult = data.get("potential_multiple", None)
+        market_checks = data.get("market_checks", {})
+
         header = f"{prefix} {sig_icon} {signal} | {symbol}{reasons_txt}"
         metrics = f"💰 Price: ${price_usd} | MC: ${market_cap:,.0f} | Liquidity: ${liquidity:,.0f} | 24H Change: {change_24h}%"
         rugline = f"{rug_status} | Score: {rug_score} / 100"
 
-        parts = [header, metrics, rugline]
+        market_line = f"📊 Market: {market_label} | Score: {market_score} | Pot.Mult: x{potential_mult}"
+        if market_checks:
+            market_line += f" | Checks: {sum(1 for k,v in market_checks.items() if v)} OK / {len(market_checks)}"
+
+        parts = [header, metrics, rugline, market_line]
 
         if rug_reasons:
             parts.extend([f"{r}" for r in rug_reasons])
