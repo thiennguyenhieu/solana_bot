@@ -36,7 +36,6 @@ def main():
 
         base = pair.get("baseToken", {})
         mint_address = base.get("address", "")
-        print(mint_address)
 
         rugcheck_data = get_rugcheck_report(mint_address)
         rug_status, rug_score, rug_reasons, rug_link = evaluate_rugcheck(rugcheck_data)
@@ -63,7 +62,6 @@ def main():
             save_trade_meta(active_ids)
 
             log_text = build_alert_log(all_tracked)  # includes 🔥 for count≥5
-            print(log_text)
             send_telegram_message(log_text)
 
 if __name__ == "__main__":
